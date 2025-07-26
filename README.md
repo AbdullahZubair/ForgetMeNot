@@ -15,3 +15,10 @@ With ForgetMeNot, you can:
 Don’t let needless warnings ruin your productivity. Choose to address the real issue with ForgetMeNot!
 
 **Take Action Now**: [Get ForgetMeNot](https://github.com/AbdullahZubair/ForgetMeNot/releases/latest) and take back control of your Drupal space.
+
+## What's New in v2.0
+- Now supports excluding **themes** and **Drupal core** from update checks, not just modules.
+- Improved admin UI: modern, accessible, and easy to use.
+- Enhanced accessibility for screen readers and keyboard users.
+- Smarter status messages and error handling.
+- Many bug fixes and codebase cleanups for production-readiness.

@@ -1,0 +1,314 @@
+/*
+ * @file
+ * Styles for ForgetMeNot module admin UI.
+ */
+
+.forget-me-not-help {
+  background: #f0f8ff;
+  border: 1px solid #b8ddf2;
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  color: #0c5460;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.forget-me-not-actions {
+  margin: 20px 0;
+  padding: 16px 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.forget-me-not-add-button {
+  background: #0074bd !important;
+  background-image: linear-gradient(to bottom, #007cba, #006ba6) !important;
+  border: 1px solid #0074bd !important;
+  color: #fff !important;
+  text-decoration: none !important;
+  padding: 8px 16px !important;
+  border-radius: 4px !important;
+  font-weight: 600 !important;
+  display: inline-block !important;
+  transition: all 0.2s ease-in-out;
+}
+
+.forget-me-not-add-button:hover,
+.forget-me-not-add-button:focus {
+  background: #025c89 !important;
+  background-image: linear-gradient(to bottom, #025c89, #024a73) !important;
+  border-color: #025c89 !important;
+  text-decoration: none !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.forget-me-not-excluded-projects {
+  margin-top: 20px;
+}
+
+.forget-me-not-excluded-projects .fieldset-legend {
+  font-weight: 600;
+  color: #333;
+}
+
+.forget-me-not-project-type {
+  margin-bottom: 16px;
+}
+
+.forget-me-not-project-type .fieldset-legend {
+  font-size: 14px;
+  color: #666;
+}
+
+.forget-me-not-project-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+}
+
+.forget-me-not-project-item {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s ease-in-out;
+}
+
+.forget-me-not-project-item:hover {
+  border-color: #0074bd;
+  box-shadow: 0 2px 4px rgba(0, 116, 189, 0.1);
+}
+
+.forget-me-not-project-item .project-name {
+  font-weight: 600;
+  color: #333;
+  margin-right: 8px;
+}
+
+.forget-me-not-project-item .project-type {
+  color: #666;
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* Project type specific styling */
+.project-type-core {
+  border-left: 4px solid #e74c3c;
+}
+
+.project-type-module {
+  border-left: 4px solid #3498db;
+}
+
+.project-type-theme {
+  border-left: 4px solid #2ecc71;
+}
+
+.remove-project {
+  background: #dc3545 !important;
+  background-image: linear-gradient(to bottom, #dc3545, #c82333) !important;
+  border: 1px solid #dc3545 !important;
+  color: #fff !important;
+  padding: 6px 12px !important;
+  border-radius: 4px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease-in-out;
+  margin-left: auto;
+}
+
+.remove-project:hover,
+.remove-project:focus {
+  background: #c82333 !important;
+  background-image: linear-gradient(to bottom, #c82333, #a71e2a) !important;
+  border-color: #c82333 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+}
+
+.remove-project:active {
+  transform: translateY(0);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.forget-me-not-empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  background: #f9f9f9;
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
+.forget-me-not-empty-state p {
+  color: #666;
+  font-size: 16px;
+  margin: 8px 0;
+}
+
+.forget-me-not-empty-state p:first-child {
+  font-weight: 600;
+  color: #333;
+}
+
+/* Checkbox styling for admin UI */
+.forget-me-not-excluded-projects input[type="checkbox"],
+.form-type-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #0074bd;
+  border-radius: 4px;
+  background: #fff;
+  margin-right: 10px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.forget-me-not-excluded-projects input[type="checkbox"]:focus,
+.form-type-checkbox input[type="checkbox"]:focus {
+  outline: 2px solid #0074bd;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px #b8ddf2;
+}
+
+.forget-me-not-excluded-projects input[type="checkbox"]:hover,
+.form-type-checkbox input[type="checkbox"]:hover {
+  border-color: #025c89;
+}
+
+.forget-me-not-messages {
+  margin: 16px 0;
+  min-height: 20px;
+}
+
+.forget-me-not-messages .messages {
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin: 8px 0;
+  font-weight: 500;
+}
+
+.forget-me-not-messages .messages.status {
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  color: #155724;
+}
+
+.forget-me-not-messages .messages.error {
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+}
+
+.forget-me-not-messages .messages.warning {
+  background: #fff3cd;
+  border: 1px solid #ffeeba;
+  color: #856404;
+}
+
+.forget-me-not-loading {
+  opacity: 0.6;
+  pointer-events: none;
+  position: relative;
+}
+
+.forget-me-not-loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid #ddd;
+  border-top-color: #0074bd;
+  border-radius: 50%;
+  animation: forget-me-not-spin 1s linear infinite;
+}
+
+@keyframes forget-me-not-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 768px) {
+  .forget-me-not-project-item {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px;
+  }
+  
+  .forget-me-not-project-item .remove-project {
+    margin-left: 0;
+    margin-top: 12px;
+    align-self: flex-end;
+  }
+  
+  .forget-me-not-add-button {
+    display: block !important;
+    text-align: center !important;
+    width: 100%;
+  }
+}
+
+/* Accessibility enhancements */
+.forget-me-not-project-item:focus-within {
+  outline: 2px solid #0074bd;
+  outline-offset: 2px;
+}
+
+.remove-project:focus {
+  outline: 2px solid #fff;
+  outline-offset: -2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .forget-me-not-project-item {
+    border-width: 2px;
+  }
+  
+  .forget-me-not-add-button,
+  .remove-project {
+    border-width: 2px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .forget-me-not-project-item,
+  .forget-me-not-add-button,
+  .remove-project,
+  .forget-me-not-checkboxes .form-item {
+    transition: none;
+  }
+  
+  .forget-me-not-add-button:hover,
+  .remove-project:hover {
+    transform: none;
+  }
+  
+  @keyframes forget-me-not-spin {
+    to {
+      transform: none;
+    }
+  }
+}
+
+@media print {
+  .forget-me-not-actions,
+  .remove-project {
+    display: none !important;
+  }
+  
+  .forget-me-not-project-item {
+    border: 1px solid #000 !important;
+    break-inside: avoid;
+  }
+}

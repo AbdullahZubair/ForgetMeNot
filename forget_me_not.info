@@ -1,7 +1,7 @@
 name = ForgetMeNot
-description = "A module that excludes unsupported modules from update checks, because why bother?"
+description = "Exclude specific modules, themes, and Drupal core from update checks. Ideal for EOL Drupal 7 sites."
 core = 7.x
 package = Custom
-version = "7.x-1.0.0"
+version = "7.x-2.0.0"
 dependencies[] = update
 configure = admin/config/system/forget_me_not

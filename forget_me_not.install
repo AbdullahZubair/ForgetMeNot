@@ -1,0 +1,204 @@
+<?php
+
+/**
+ * @file
+ * Installation and update functions for ForgetMeNot module.
+ */
+
+/**
+ * Implements hook_requirements().
+ * 
+ * Checks system requirements and provides status information.
+ * 
+ * @param string $phase
+ *   The phase in which requirements are checked.
+ * 
+ * @return array
+ *   An array of requirements.
+ */
+function forget_me_not_requirements($phase) {
+  $requirements = array();
+  $t = get_t();
+
+  if ($phase == 'runtime') {
+    // Check if Update module is enabled.
+    if (!module_exists('update')) {
+      $requirements['forget_me_not_update'] = array(
+        'title' => $t('ForgetMeNot - Update module'),
+        'value' => $t('Not enabled'),
+        'description' => $t('The ForgetMeNot module requires the Update module to be enabled to function properly.'),
+        'severity' => REQUIREMENT_ERROR,
+      );
+    }
+    else {
+      // Show current exclusions count.
+      $excluded_projects = variable_get('forget_me_not_excluded_projects', array());
+      $count = count($excluded_projects);
+      
+      $requirements['forget_me_not_status'] = array(
+        'title' => $t('ForgetMeNot - Excluded projects'),
+        'value' => format_plural($count, '1 project excluded', '@count projects excluded'),
+        'description' => $count > 0 
+          ? $t('Currently excluding: @projects', array('@projects' => implode(', ', $excluded_projects)))
+          : $t('No projects are currently excluded from update checks.'),
+        'severity' => REQUIREMENT_INFO,
+      );
+    }
+  }
+
+  return $requirements;
+}
+
+/**
+ * Implements hook_install().
+ * 
+ * Performs initial setup when the module is installed.
+ */
+function forget_me_not_install() {
+  // Set default configuration.
+  variable_set('forget_me_not_excluded_projects', array());
+  
+  // Set module weight to ensure it runs after the update module.
+  db_update('system')
+    ->fields(array('weight' => 10))
+    ->condition('name', 'forget_me_not')
+    ->condition('type', 'module')
+    ->execute();
+  
+  // Log installation.
+  watchdog('forget_me_not', 'ForgetMeNot module installed successfully.', array(), WATCHDOG_INFO);
+  
+  // Show installation message.
+  drupal_set_message(t('ForgetMeNot module has been installed. You can now <a href="@url">manage excluded projects</a>.', 
+    array('@url' => url('admin/config/system/forget_me_not'))));
+}
+
+/**
+ * Implements hook_uninstall().
+ * 
+ * Cleans up module data when uninstalled.
+ */
+function forget_me_not_uninstall() {
+  // Remove all module variables.
+  variable_del('forget_me_not_excluded_projects');
+  // Clear relevant caches.
+  if (function_exists('_update_cache_clear')) {
+    _update_cache_clear();
+  }
+  cache_clear_all();
+  // Log uninstallation.
+  watchdog('forget_me_not', 'ForgetMeNot module uninstalled and all data cleaned up.', array(), WATCHDOG_INFO);
+}
+
+/**
+ * Implements hook_enable().
+ * 
+ * Performs actions when the module is enabled.
+ */
+function forget_me_not_enable() {
+  // Clear caches to ensure hooks are properly registered.
+  drupal_flush_all_caches();
+  
+  // Log enabling.
+  watchdog('forget_me_not', 'ForgetMeNot module enabled.', array(), WATCHDOG_INFO);
+}
+
+/**
+ * Implements hook_disable().
+ * 
+ * Performs actions when the module is disabled.
+ */
+function forget_me_not_disable() {
+  // Clear update caches to restore normal update checking.
+  if (function_exists('_update_cache_clear')) {
+    _update_cache_clear();
+  }
+  
+  // Log disabling.
+  watchdog('forget_me_not', 'ForgetMeNot module disabled. All projects will now appear in update checks.', array(), WATCHDOG_INFO);
+}
+
+/**
+ * Update 7001: Migrate from old variable name if it exists.
+ */
+function forget_me_not_update_7001() {
+  // Check if the old variable exists (for users upgrading from earlier versions).
+  $old_modules = variable_get('forget_me_not_excluded_modules', NULL);
+  
+  if ($old_modules !== NULL) {
+    // Get current projects (in case some were added with new version).
+    $current_projects = variable_get('forget_me_not_excluded_projects', array());
+    
+    // Merge old modules with current projects.
+    $merged_projects = array_unique(array_merge($current_projects, $old_modules));
+    
+    // Save merged list.
+    variable_set('forget_me_not_excluded_projects', $merged_projects);
+    
+    // Remove old variable.
+    variable_del('forget_me_not_excluded_modules');
+    
+    return t('Successfully migrated @count excluded modules to the new project system.', 
+      array('@count' => count($old_modules)));
+  }
+  
+  return t('No migration needed - new installation detected.');
+}
+
+/**
+ * Update 7002: Set proper module weight.
+ */
+function forget_me_not_update_7002() {
+  // Ensure module runs after update module.
+  db_update('system')
+    ->fields(array('weight' => 10))
+    ->condition('name', 'forget_me_not')
+    ->condition('type', 'module')
+    ->execute();
+  
+  return t('Updated module weight to ensure proper execution order.');
+}
+
+/**
+ * Validates the excluded projects data integrity.
+ * 
+ * This function can be called during updates to ensure data consistency.
+ * 
+ * @return array
+ *   Array of validation results.
+ */
+function forget_me_not_validate_data() {
+  $results = array();
+  $excluded_projects = variable_get('forget_me_not_excluded_projects', array());
+  
+  if (!is_array($excluded_projects)) {
+    $results[] = 'Excluded projects data is not an array - resetting to empty array.';
+    variable_set('forget_me_not_excluded_projects', array());
+    return $results;
+  }
+  
+  $valid_projects = array();
+  $invalid_count = 0;
+  
+  foreach ($excluded_projects as $project) {
+    if (is_string($project) && preg_match('/^[a-zA-Z0-9_-]+$/', $project)) {
+      $valid_projects[] = $project;
+    }
+    else {
+      $invalid_count++;
+    }
+  }
+  
+  if ($invalid_count > 0) {
+    variable_set('forget_me_not_excluded_projects', $valid_projects);
+    $results[] = format_plural($invalid_count, 
+      'Removed 1 invalid project name from exclusions.', 
+      'Removed @count invalid project names from exclusions.');
+  }
+  
+  if (empty($results)) {
+    $results[] = 'All excluded projects data is valid.';
+  }
+  
+  return $results;
+}

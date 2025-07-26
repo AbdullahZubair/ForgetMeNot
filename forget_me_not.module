@@ -2,211 +2,342 @@
 
 /**
  * @file
- * ForgetMeNot: A module to exclude selected modules from update checks.
+ * ForgetMeNot: Drupal 7 module to exclude projects from update checks.
  * 
- * This module allows site admins to manage a list of modules that should be
- * excluded from update checks. It provides an interface for adding and
- * removing modules from the exclusion list.
+ * This module provides a comprehensive interface for site administrators to manage
+ * which projects (modules, themes, and Drupal core) should be excluded from
+ * update status checks. This is particularly useful for EOL Drupal 7 sites
+ * where update warnings are no longer relevant.
+ * 
+ * @author Abdullah Zubair
+ * @version 2.0
+ * @package ForgetMeNot
  */
+
+// Define module constants.
+define('FORGET_ME_NOT_VARIABLE_NAME', 'forget_me_not_excluded_projects');
+define('FORGET_ME_NOT_PERMISSION', 'administer site configuration');
+define('FORGET_ME_NOT_BASE_PATH', 'admin/config/system/forget_me_not');
 
 /**
  * Implements hook_menu().
  * 
- * Defines routes for managing excluded modules and performing AJAX operations.
+ * Defines the administrative interface routes for managing excluded projects.
+ * 
+ * @return array
+ *   An array of menu items.
  */
 function forget_me_not_menu() {
   $items = array();
 
-  // Main page to manage excluded modules.
-  $items['admin/config/system/forget_me_not'] = array(
-    'title' => 'Manage Excluded Modules',
-    'description' => 'Manage modules excluded from update checks.',
-    'page callback' => 'forget_me_not_manage_excluded_modules_page',
-    'access arguments' => array('administer site configuration'),
+  // Main administration page.
+  $items[FORGET_ME_NOT_BASE_PATH] = array(
+    'title' => 'Manage Excluded Projects',
+    'description' => 'View and manage projects excluded from update status checks.',
+    'page callback' => 'forget_me_not_admin_page',
+    'access arguments' => array(FORGET_ME_NOT_PERMISSION),
     'type' => MENU_NORMAL_ITEM,
+    'file' => 'forget_me_not.admin.inc',
   );
 
-  // Route for the "Select Modules to Exclude" page.
-  $items['admin/config/system/forget_me_not/select_modules'] = array(
-    'title' => 'Select Modules to Exclude',
-    'description' => 'Select enabled modules to exclude from update checks.',
+  // Project selection form.
+  $items[FORGET_ME_NOT_BASE_PATH . '/select'] = array(
+    'title' => 'Select Projects to Exclude',
+    'description' => 'Choose which projects to exclude from update checks.',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('forget_me_not_select_modules_form'),
-    'access arguments' => array('administer site configuration'),
-    'type' => MENU_NORMAL_ITEM,
+    'page arguments' => array('forget_me_not_select_projects_form'),
+    'access arguments' => array(FORGET_ME_NOT_PERMISSION),
+    'type' => MENU_LOCAL_ACTION,
+    'file' => 'forget_me_not.admin.inc',
   );
 
-  // Route to handle module removal via AJAX.
-  $items['admin/config/system/forget_me_not/remove_module'] = array(
-    'page callback' => 'forget_me_not_remove_module_callback',
-    'access arguments' => array('administer site configuration'),
+  // AJAX callback for project removal.
+  $items[FORGET_ME_NOT_BASE_PATH . '/remove'] = array(
+    'page callback' => 'forget_me_not_ajax_remove_project',
+    'access arguments' => array(FORGET_ME_NOT_PERMISSION),
     'type' => MENU_CALLBACK,
+    'file' => 'forget_me_not.admin.inc',
   );
 
   return $items;
 }
 
 /**
- * Helper function to get the list of excluded modules.
- */
-function forget_me_not_get_excluded_modules() {
-  return variable_get('forget_me_not_excluded_modules', array());
-}
-
-/**
- * Helper function to save the list of excluded modules.
- */
-function forget_me_not_save_excluded_modules($modules) {
-  variable_set('forget_me_not_excluded_modules', $modules);
-}
-
-/**
- * Page callback for displaying and managing excluded modules.
+ * Implements hook_permission().
  * 
- * Displays all excluded modules with the option to remove them and provides
- * a button to add new modules to the exclusion list.
- */
-function forget_me_not_manage_excluded_modules_page() {
-  $output = '';
-
-  // Add the "Add" button to open the dedicated page.
-  $output .= '<button id="add-modules-button">' . t('Add Modules to Exclude') . '</button>';
-
-  // Get the list of currently excluded modules.
-  $excluded_modules = forget_me_not_get_excluded_modules();
-
-  // If there are excluded modules, display them with remove buttons.
-  if (!empty($excluded_modules)) {
-    $output .= '<h2>' . t('Excluded Modules') . '</h2>';
-    $output .= '<ul id="excluded-modules-list">';
-    foreach ($excluded_modules as $module) {
-      $output .= '<li id="module-' . check_plain($module) . '">' . check_plain($module) .
-        ' <button class="remove-module" data-module="' . check_plain($module) . '">' . t('Remove') . '</button></li>';
-    }
-    $output .= '</ul>';
-  }
-  else {
-    // If no modules are excluded, display a message.
-    $output .= '<p>' . t('No modules have been excluded yet.') . '</p>';
-  }
-
-  // Attach JavaScript for handling dynamic updates (removal and page opening).
-  drupal_add_js(drupal_get_path('module', 'forget_me_not') . '/js/forget_me_not.js');
-
-  return $output;
-}
-
-/**
- * AJAX callback to remove a module from the exclusion list.
- */
-function forget_me_not_remove_module_callback() {
-  // Use drupal_validate_utf8() to validate the input.
-  $module = check_plain(drupal_validate_utf8($_POST['module']) ? $_POST['module'] : '');
-
-  // Get the list of excluded modules.
-  $excluded_modules = forget_me_not_get_excluded_modules();
-
-  // Remove the selected module from the exclusion list.
-  if (($key = array_search($module, $excluded_modules)) !== FALSE) {
-    unset($excluded_modules[$key]);
-    forget_me_not_save_excluded_modules($excluded_modules);
-
-    // Respond with success status.
-    drupal_json_output(array('status' => 'success'));
-  }
-  else {
-    // Respond with error if the module wasn't found.
-    drupal_json_output(array('status' => 'error'));
-  }
-
-  drupal_exit();
-}
-
-/**
- * Implements hook_form().
+ * Defines permissions for this module (though we use existing Drupal permission).
  * 
- * Provides a form to allow users to select enabled modules to exclude.
+ * @return array
+ *   An array of permissions.
  */
-function forget_me_not_select_modules_form($form, &$form_state) {
-  // Get the list of all currently excluded modules.
-  $excluded_modules = forget_me_not_get_excluded_modules();
-
-  // Get the list of all enabled modules.
-  $enabled_modules = array_filter(module_list(TRUE), function($module) {
-    return module_exists($module);
-  });
-
-  // Build the checkboxes for the enabled modules.
-  $form['forget_me_not_enabled_modules'] = array(
-    '#type' => 'checkboxes',
-    '#title' => t('Enabled Modules'),
-    '#description' => t('Select which enabled modules to exclude from update checks. Already excluded modules are hidden.'),
-    '#options' => array(),
+function forget_me_not_permission() {
+  return array(
+    'manage excluded projects' => array(
+      'title' => t('Manage excluded projects'),
+      'description' => t('Add and remove projects from update check exclusions.'),
+    ),
   );
-
-  // Add each enabled module to the checkboxes, skipping already excluded ones.
-  foreach ($enabled_modules as $module => $info) {
-    if (!in_array($module, $excluded_modules)) {
-      $form['forget_me_not_enabled_modules']['#options'][$module] = $module;
-    }
-  }
-
-  // Add a submit button to save the selected modules for exclusion.
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Exclude Selected Modules'),
-  );
-
-  return $form;
 }
 
 /**
- * Submit handler for the enabled modules form.
+ * Implements hook_help().
  * 
- * Adds the selected modules to the exclusion list.
+ * Provides help and documentation for the module.
+ * 
+ * @param string $path
+ *   The path for which to provide help.
+ * @param array $arg
+ *   An array of arguments.
+ * 
+ * @return string|null
+ *   Help text or NULL if no help is available.
  */
-function forget_me_not_select_modules_form_submit($form, &$form_state) {
-  // Get the currently excluded modules.
-  $excluded_modules = forget_me_not_get_excluded_modules();
+function forget_me_not_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#forget_me_not':
+      $output = '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('The ForgetMeNot module allows site administrators to exclude specific projects (modules, themes, and Drupal core) from update status checks. This is particularly useful for end-of-life Drupal 7 sites where update notifications are no longer relevant.') . '</p>';
+      $output .= '<h3>' . t('Uses') . '</h3>';
+      $output .= '<dl>';
+      $output .= '<dt>' . t('Excluding modules and themes') . '</dt>';
+      $output .= '<dd>' . t('Selected modules and themes will be completely removed from the update status report.') . '</dd>';
+      $output .= '<dt>' . t('Excluding Drupal core') . '</dt>';
+      $output .= '<dd>' . t('Drupal core will appear as "up to date" with a note that update checks are disabled.') . '</dd>';
+      $output .= '</dl>';
+      return $output;
+  }
+}
 
-  // Get the modules selected by the user to exclude.
-  $selected_modules = array_filter($form_state['values']['forget_me_not_enabled_modules']);
+/**
+ * Retrieves the list of excluded projects.
+ * 
+ * @return array
+ *   An array of project machine names that are excluded from update checks.
+ */
+function forget_me_not_get_excluded_projects() {
+  return variable_get(FORGET_ME_NOT_VARIABLE_NAME, array());
+}
 
-  // Merge the selected modules with the already excluded ones.
-  $excluded_modules = array_unique(array_merge($excluded_modules, array_keys($selected_modules)));
+/**
+ * Saves the list of excluded projects.
+ * 
+ * @param array $projects
+ *   An array of project machine names to exclude from update checks.
+ * 
+ * @return bool
+ *   TRUE on success, FALSE on failure.
+ */
+function forget_me_not_save_excluded_projects(array $projects) {
+  // Validate input - ensure it's an array of strings.
+  $projects = array_filter($projects, 'is_string');
+  $projects = array_unique($projects);
+  
+  // Save to variables table.
+  variable_set(FORGET_ME_NOT_VARIABLE_NAME, $projects);
+  
+  // Clear relevant caches.
+  forget_me_not_clear_caches();
+  
+  return TRUE;
+}
 
-  // Update the variable to save the excluded modules.
-  forget_me_not_save_excluded_modules($excluded_modules);
+/**
+ * Determines the type of a given project.
+ * 
+ * @param string $project_name
+ *   The machine name of the project.
+ * 
+ * @return string
+ *   The project type: 'core', 'module', 'theme', or 'unknown'.
+ */
+function forget_me_not_get_project_type($project_name) {
+  // Validate input.
+  if (!is_string($project_name) || empty($project_name)) {
+    return 'unknown';
+  }
+  
+  // Check for Drupal core.
+  if ($project_name === 'drupal') {
+    return 'core';
+  }
+  
+  // Check if it's a theme.
+  $themes = list_themes();
+  if (isset($themes[$project_name])) {
+    return 'theme';
+  }
+  
+  // Check if it's a module.
+  $modules = system_rebuild_module_data();
+  if (isset($modules[$project_name])) {
+    return 'module';
+  }
+  
+  return 'unknown';
+}
 
-  // Redirect back to the main page with a success message.
-  drupal_set_message(t('The selected modules have been excluded from update checks.'));
-  drupal_goto('admin/config/system/forget_me_not');
+/**
+ * Gets available projects that can be excluded.
+ * 
+ * @param array $excluded_projects
+ *   Currently excluded projects to filter out.
+ * 
+ * @return array
+ *   An associative array with project types as keys and project arrays as values.
+ */
+function forget_me_not_get_available_projects(array $excluded_projects = array()) {
+  $available = array(
+    'modules' => array(),
+    'themes' => array(),
+    'core' => array(),
+  );
+  
+  // Get modules.
+  $modules = system_rebuild_module_data();
+  foreach ($modules as $name => $module) {
+    if (!in_array($name, $excluded_projects) && $module->status) {
+      $available['modules'][$name] = $module->info['name'];
+    }
+  }
+  
+  // Get themes.
+  $themes = list_themes();
+  foreach ($themes as $name => $theme) {
+    if (!in_array($name, $excluded_projects) && !empty($theme->status)) {
+      $available['themes'][$name] = $theme->info['name'];
+    }
+  }
+  
+  // Add Drupal core if not excluded.
+  if (!in_array('drupal', $excluded_projects)) {
+    $available['core']['drupal'] = t('Drupal Core');
+  }
+  
+  return $available;
+}
+
+/**
+ * Clears relevant caches after configuration changes.
+ */
+function forget_me_not_clear_caches() {
+  // Clear update module caches.
+  if (function_exists('_update_cache_clear')) {
+    _update_cache_clear();
+  }
+  
+  // Clear menu cache.
+  menu_rebuild();
 }
 
 /**
  * Implements hook_update_status_alter().
  * 
- * Alters the module update status to exclude selected modules from update checks.
+ * Alters the project update status to exclude selected projects from update checks.
+ * This is the core functionality that removes projects from update reports.
+ * 
+ * @param array $projects
+ *   Reference to the projects array from the update system.
  */
 function forget_me_not_update_status_alter(&$projects) {
-  // Get the list of excluded modules.
-  $excluded_modules = forget_me_not_get_excluded_modules();
+  $excluded_projects = forget_me_not_get_excluded_projects();
+  
+  if (empty($excluded_projects)) {
+    return;
+  }
 
-  // Loop through the projects and unset any excluded modules from the update checks.
-  foreach ($excluded_modules as $module) {
-    if (isset($projects[$module])) {
-      unset($projects[$module]);
+  foreach ($excluded_projects as $project_name) {
+    if (!isset($projects[$project_name])) {
+      continue;
+    }
+    
+    // Special handling for Drupal core.
+    if ($project_name === 'drupal') {
+      $projects[$project_name] = forget_me_not_build_core_project_data($projects[$project_name]);
+    }
+    else {
+      // For modules and themes, simply remove from the list.
+      unset($projects[$project_name]);
     }
   }
 }
 
 /**
- * Implements hook_uninstall().
+ * Builds cleaned project data for Drupal core.
  * 
- * Cleans up variables and settings when the module is uninstalled.
+ * @param array $original_data
+ *   Original project data from the update system.
+ * 
+ * @return array
+ *   Cleaned project data that shows core as "up to date".
  */
-function forget_me_not_uninstall() {
-  // Delete the variable that stores excluded modules when the module is uninstalled.
-  variable_del('forget_me_not_excluded_modules');
+function forget_me_not_build_core_project_data(array $original_data) {
+  // Extract required data with fallbacks.
+  $existing_version = isset($original_data['existing_version']) ? $original_data['existing_version'] : '7.x';
+  $datestamp = isset($original_data['datestamp']) ? $original_data['datestamp'] : REQUEST_TIME;
+  $includes = isset($original_data['includes']) ? $original_data['includes'] : array();
+  $install_type = isset($original_data['install_type']) ? $original_data['install_type'] : 'official';
+  $info = isset($original_data['info']) ? $original_data['info'] : array();
+  
+  return array(
+    'name' => 'drupal',
+    'info' => $info,
+    'datestamp' => $datestamp,
+    'existing_version' => $existing_version,
+    'status' => UPDATE_CURRENT,
+    'reason' => t('Update checks disabled by ForgetMeNot module'),
+    'title' => t('Drupal core (Updates disabled)'),
+    'recommended' => $existing_version,
+    'latest_version' => $existing_version,
+    'project_type' => 'core',
+    'project_status' => 'published',
+    'install_type' => $install_type,
+    'link' => 'https://www.drupal.org/project/drupal/releases/' . $existing_version,
+    'includes' => $includes,
+    'releases' => array(
+      $existing_version => array(
+        'version' => $existing_version,
+        'date' => $datestamp,
+        'status' => 'published',
+        'release_link' => 'https://www.drupal.org/project/drupal/releases/' . $existing_version,
+        'download_link' => 'https://www.drupal.org/project/drupal/releases/' . $existing_version,
+      ),
+    ),
+    'extra_classes' => array('forget-me-not-excluded'),
+  );
 }
 
+/**
+ * Implements hook_init().
+ * 
+ * Adds CSS and JavaScript files on relevant admin pages.
+ */
+function forget_me_not_init() {
+  // Only load assets on our admin pages.
+  if (strpos(current_path(), FORGET_ME_NOT_BASE_PATH) === 0) {
+    drupal_add_css(drupal_get_path('module', 'forget_me_not') . '/css/forget_me_not.css');
+    drupal_add_js(drupal_get_path('module', 'forget_me_not') . '/js/forget_me_not.js');
+  }
+}
+
+/**
+ * Validates a project name for security.
+ * 
+ * @param string $project_name
+ *   The project name to validate.
+ * 
+ * @return bool
+ *   TRUE if valid, FALSE otherwise.
+ */
+function forget_me_not_validate_project_name($project_name) {
+  // Check basic format (alphanumeric, underscores, hyphens).
+  if (!preg_match('/^[a-zA-Z0-9_-]+$/', $project_name)) {
+    return FALSE;
+  }
+  
+  // Check length.
+  if (strlen($project_name) > 50) {
+    return FALSE;
+  }
+  
+  return TRUE;
+}
